@@ -9,6 +9,8 @@ color bgColor;
 
 /* card */
 float cardPadding = 10;
+float cardSwapProgress = 0;
+
 
 /* rorschach */
 float rWidth = 400;
@@ -146,9 +148,13 @@ void draw () {
     /* actual render */
 
     background(bgColor);
+    cardSwapProgress = lerp(cardSwapProgress,1,0.1);
 
-    drawRorschachCard(rorschach,mouseX,mouseY,0);
-    drawRorschachCard(oldRorschach,width - mouseX,height - mouseY,0);
+    float cardHeight = rHeight + cardPadding * 0.5;
+    float deltaY = cardSwapProgress * (cardHeight + height) / 2;
+
+    drawRorschachCard(rorschach,width / 2,deltaY - cardHeight / 2,PI * (1 - cardSwapProgress));
+    drawRorschachCard(oldRorschach,width /2 ,height / 2 + deltaY + cardSwapProgress * 2,0);
     
 
 }
@@ -169,6 +175,7 @@ void drawRorschachCard (PImage _image, float _x, float _y, float _rotation) {
 
 void mouseClicked () {
     oldRorschach = rorschach;
+    cardSwapProgress = 0;
     rorschach = generateRorschach();
 }
 
