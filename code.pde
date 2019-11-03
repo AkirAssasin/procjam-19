@@ -1,7 +1,3 @@
-/* @pjs font='fonts/font.ttf' */ 
-
-var myfont = loadFont("fonts/font.ttf"); 
-
 /* canvas */
 float width;
 float height;
@@ -31,9 +27,6 @@ void setup() {
     height = window.innerHeight;
     size(width, height);
 
-    /* set font */
-    textFont(myfont);
-
     /* set canvas background */
     bgColor = color(30,30,30);
     background(bgColor);
@@ -45,28 +38,26 @@ void setup() {
 
 }
 
-void randomizeVectorBiased (PVector _vector, float _width, float _height) {
+void draw () {
 
-    _vector.x = (1 - skewedRandom()) * _width;
-    _vector.y = skewedToCenterRandom() * _height;
+    /* resize to window */
+
+    width = window.innerWidth;
+    height = window.innerHeight;
+    size(width, height);
+
+    /* actual render */
+
+    background(bgColor);
+    cardSwapProgress = lerp(cardSwapProgress,1,0.1);
+
+    float cardHeight = rHeight + cardPadding * 0.5;
+    float deltaY = cardSwapProgress * (cardHeight + height) / 2;
+
+    drawRorschachCard(rorschach,width / 2,deltaY - cardHeight / 2,PI * (1 - cardSwapProgress));
+    drawRorschachCard(oldRorschach,width /2 ,height / 2 + deltaY + cardSwapProgress * 2,0);
 
 }
-
-void randomOffsetVector (PVector _vector, float _width, float _height, float minDistance, float maxDistance) {
-
-    PVector ran = PVector.random2D();
-    ran.mult(random(minDistance,maxDistance));
-    _vector.add(ran);
-
-    if (_vector.x < 0 || _vector.x > _width || _vector.y < 0 || _vector > _height) {
-        randomizeVectorBiased(_vector,_width,_height);
-    }
-
-}
-
-Number.prototype.between = function (min, max) {
-    return this > min && this < max;
-};
 
 PGraphic generateRorschach () {
 
@@ -143,19 +134,22 @@ PGraphic generateRorschach () {
 
 }
 
-void draw () {
+void randomizeVectorBiased (PVector _vector, float _width, float _height) {
 
-    /* actual render */
+    _vector.x = (1 - skewedRandom()) * _width;
+    _vector.y = skewedToCenterRandom() * _height;
 
-    background(bgColor);
-    cardSwapProgress = lerp(cardSwapProgress,1,0.1);
+}
 
-    float cardHeight = rHeight + cardPadding * 0.5;
-    float deltaY = cardSwapProgress * (cardHeight + height) / 2;
+void randomOffsetVector (PVector _vector, float _width, float _height, float minDistance, float maxDistance) {
 
-    drawRorschachCard(rorschach,width / 2,deltaY - cardHeight / 2,PI * (1 - cardSwapProgress));
-    drawRorschachCard(oldRorschach,width /2 ,height / 2 + deltaY + cardSwapProgress * 2,0);
-    
+    PVector ran = PVector.random2D();
+    ran.mult(random(minDistance,maxDistance));
+    _vector.add(ran);
+
+    if (_vector.x < 0 || _vector.x > _width || _vector.y < 0 || _vector > _height) {
+        randomizeVectorBiased(_vector,_width,_height);
+    }
 
 }
 
@@ -174,6 +168,9 @@ void drawRorschachCard (PImage _image, float _x, float _y, float _rotation) {
 }
 
 void mouseClicked () {
+
+    if (cardSwapProgress < 0.98) return;
+
     oldRorschach = rorschach;
     cardSwapProgress = 0;
     rorschach = generateRorschach();
