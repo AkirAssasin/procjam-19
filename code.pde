@@ -32,35 +32,27 @@ Number.prototype.between = function (min, max) {
 };
 
 void draw () {
+    
+    noStroke();
+    fill(0,0,0,10);
 
-    paint(mouseX,mouseY,40,color(0),10,10);
-
-}
-
-void mouseClicked () {
-
-    // paint(mouseX,mouseY,40,color(0));
+    paint(mouseX,mouseY,40);
 
 }
 
-void paint (float _x, float _y, float _radius, color _color, float _fillAlpha, float _strokeAlpha) {
+void paint (float _x, float _y, float _radius) {
 
     /* generate polygon */
     ArrayList polygon = new ArrayList();
-    createPolygon(polygon,4,random(TWO_PI),_radius);
+    createPolygon(polygon,10,random(TWO_PI),_radius);
     deformPolygonTimes(polygon,_radius / 8,3);
-
-    /* set polygon colors */
-    stroke(_color,_strokeAlpha);
-    strokeWeight(3);
-    fill(_color,_fillAlpha);
 
     /* draw polygon */
     beginShape();
-        for (int i = 0; i < polygon.size(); ++i) {
-            PVector vector = polygon.get(i);
-            vertex(_x + vector.x,_y + vector.y);
-        }
+    for (int i = 0; i < polygon.size(); ++i) {
+        PVector vector = polygon.get(i);
+        vertex(mouseX + vector.x,mouseY + vector.y);
+    }
     endShape();
 
 }
