@@ -4,16 +4,23 @@ float height;
 color bgColor;
 
 /* card */
-float cardPadding = 10;
-float cardSwapProgress = 0;
 
+float startDrawRadian = 0; 
+float cardPadding = 10;
+float cardSwapProgress = 1;
+float cardShadow = 10;
 
 /* rorschach */
-float rWidth = 400;
-float rHeight = 300;
-float rMinDist = 20;
-float rMaxDist = 40;
-float rBlotRadius = 30;
+
+float rAspectRatio = 4/3;
+int rMinHeight = 300;
+float rSizeRatio = 0.65;
+
+int rWidth = 400;
+int rHeight = 300;
+float rMinDistRatio = 20/300;
+float rMaxDistRatio = 40/300;
+float rBlotRadiusRatio = 30/300;
 int rBlotTimes = 40;
 
 color rorschachBgColor;
@@ -22,13 +29,10 @@ PImage oldRorschach;
 
 void setup() {
     
-    /* set canvas size to window size */
-    width = window.innerWidth;
-    height = window.innerHeight;
-    size(width, height);
+    resize();
 
     /* set canvas background */
-    bgColor = color(30,30,30);
+    bgColor = color(50,30,30);
     background(bgColor);
 
     /* generate rorschach */
@@ -38,28 +42,61 @@ void setup() {
 
 }
 
-void draw () {
+void resize () {
 
-    /* resize to window */
-
+    /* set canvas size to window size */
     width = window.innerWidth;
     height = window.innerHeight;
     size(width, height);
 
-    /* actual render */
+    /* set rorschach size */
+    rHeight = max(height * rSizeRatio,rMinHeight);
+    rWidth = rHeight * rAspectRatio;
+    rWidth -= rWidth % 2;
 
+}
+
+void draw () {
+
+    /* resize to window */
+    resize();
+
+    /* actual render */
     background(bgColor);
     cardSwapProgress = lerp(cardSwapProgress,1,0.1);
 
     float cardHeight = rHeight + cardPadding * 0.5;
     float deltaY = cardSwapProgress * (cardHeight + height) / 2;
 
-    drawRorschachCard(rorschach,width / 2,deltaY - cardHeight / 2,PI * (1 - cardSwapProgress));
-    drawRorschachCard(oldRorschach,width /2 ,height / 2 + deltaY + cardSwapProgress * 2,0);
+    drawRorschachCard(rorschach,width / 2,deltaY - cardHeight / 2,startDrawRadian * (1 - cardSwapProgress));
+    drawRorschachCard(oldRorschach,width /2 ,height / 2 + deltaY + (cardShadow + cardSwapProgress) * 2,0);
+
+    if (cardSwapProgress >= 0.98) {
+
+        fill(255);
+        textAlign(CENTER,TOP);
+        textSize(20);
+        text("click to draw another rorschach",width / 2,(height + cardHeight) / 2 + 20);
+
+    }
 
 }
 
+void mouseClicked () {
+
+    if (cardSwapProgress < 0.98) return;
+
+    oldRorschach = rorschach;
+    cardSwapProgress = 0;
+    startDrawRadian = random(-1,1);
+    rorschach = generateRorschach();
+}
+
 PGraphic generateRorschach () {
+
+    float rMinDist = rHeight * rMinDistRatio;
+    float rMaxDist = rHeight * rMaxDistRatio;
+    float rBlotRadius = rHeight * rBlotRadiusRatio;
 
     /* random amount of colors + white in between */
     int colorCount = 1 + round(random(2));
@@ -123,7 +160,7 @@ PGraphic generateRorschach () {
     fullGraphic.beginDraw();
     fullGraphic.background(rorschachBgColor);
     fullGraphic.image(halfGraphic,0,0);
-    
+
     fullGraphic.pushMatrix();
     fullGraphic.scale(-1.0,1.0);
     fullGraphic.image(halfGraphic,-rWidth,0);
@@ -160,20 +197,18 @@ void drawRorschachCard (PImage _image, float _x, float _y, float _rotation) {
     rotate(_rotation);
     
     rectMode(CENTER);
-    rect(0,0,rWidth + cardPadding,rHeight + cardPadding);
+    noStroke();
+
+    fill(0,100);
+    rect(cardShadow,cardShadow,rWidth + cardPadding,rHeight + cardPadding);
+    
+    fill(255);
+    rect(-cardShadow,-cardShadow,rWidth + cardPadding,rHeight + cardPadding);
+    
     imageMode(CENTER);
-    image(_image,0,0);
+    image(_image,-cardShadow,-cardShadow,rWidth,rHeight);
     popMatrix();
 
-}
-
-void mouseClicked () {
-
-    if (cardSwapProgress < 0.98) return;
-
-    oldRorschach = rorschach;
-    cardSwapProgress = 0;
-    rorschach = generateRorschach();
 }
 
 float skewedRandom () {
