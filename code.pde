@@ -7,6 +7,9 @@ float width;
 float height;
 
 int count;
+PGraphic halfGraphic;
+
+color secondaryColor;
 
 /* nodes */
 // ArrayList nodes;
@@ -18,14 +21,16 @@ void setup() {
     height = window.innerHeight;
     size(width, height);
 
-    /* initialize array list */
-    // nodes = new ArrayList();
+    /* initialize graphic */
+    halfGraphic = createGraphics(width/2,height);
 
     /* set font */
     textFont(myfont);
 
     /* clear canvas */
     background(color(255));
+
+    secondaryColor = color(random(255),random(255),random(255));
 
 }
 
@@ -38,58 +43,75 @@ void draw () {
     if (count > 30) return;
     ++count;
 
-    noStroke();
-    fill(0,0,0,10);
+    halfGraphic.noStroke();
+    if (random(1) > 0.5) {
+        halfGraphic.fill(20,20,20,5 + random(10));
+    } else halfGraphic.fill(secondaryColor,5 + random(10));
 
-    float r = random(60);
-    float x = random(width);
+    float r = 20 + random(50);
+    float x = (1 - skewedRandom()) * width/2;
     float y = random(height);
 
-    paintTimes(x,y,r,20);
-    paintTimes(width - x,y,r,20);
+    paintTimes(halfGraphic,x,y,r,50);
+
+    /* actual render */
+
+    background(color(255));
+    ellipse(0,0,5,5);
+    image(halfGraphic,0,0);
+    
+    pushMatrix();
+    scale(-1.0,1.0);
+    image(halfGraphic,-width,0);
+    popMatrix();
 
 }
 
-void paintTimes (float _x, float _y, float _radius, int _times) {
+float skewedRandom () {
+    float r = random(1);
+    return r * r;
+}
+
+void paintTimes (PGraphic _target, float _x, float _y, float _radius, int _times) {
 
     /* generate polygon */
-    // ArrayList polygon = new ArrayList();
-    // createPolygon(polygon,10,random(TWO_PI),_radius);
-    // stretchPolygonInDirection(polygon,random(TWO_PI),3);
+    ArrayList polygon = new ArrayList();
+    createPolygon(polygon,10,random(TWO_PI),_radius);
+    stretchPolygonInDirection(polygon,random(TWO_PI),random(1,4));
     
     /* draw deformations */
 
     for (int t = 0; t < _times; ++t) {
 
-        paint(_x,_y,_radius);
-        // paintPolygon(polygon,_radius / 8,_x,_y);
+        // paint(_target,_x,_y,_radius);
+        paintPolygon(_target,polygon,_radius / 4,_x,_y);
 
     }
 
 }
 
-void paint (float _x, float _y, float _radius) {
+void paint (PGraphic _target, float _x, float _y, float _radius) {
 
     /* generate polygon */
     ArrayList polygon = new ArrayList();
     createPolygon(polygon,10,random(TWO_PI),_radius);
     stretchPolygonInDirection(polygon,random(TWO_PI),3);
-    paintPolygon(polygon,_radius / 8,_x,_y);
+    paintPolygon(_target,polygon,_radius / 8,_x,_y);
 
 }
 
-void paintPolygon (ArrayList _polygon, float _defRadius, float _x, float _y) {
+void paintPolygon (PGraphic _target, ArrayList _polygon, float _defRadius, float _x, float _y) {
 
     ArrayList defpoly = _polygon.clone();
     deformPolygonTimes(defpoly,_defRadius,3);
 
     /* draw polygon */
-    beginShape();
+    _target.beginShape();
         for (int i = 0; i < defpoly.size(); ++i) {
             PVector vector = defpoly.get(i);
-            vertex(_x + vector.x,_y + vector.y);
+            _target.vertex(_x + vector.x,_y + vector.y);
         }
-    endShape();   
+    _target.endShape();   
 
 }
 
