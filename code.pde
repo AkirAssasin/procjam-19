@@ -2,132 +2,104 @@
 
 var myfont = loadFont("fonts/font.ttf"); 
 
-ArrayList nodes;
-float sx;
-float sy;
-boolean se = false;
-float maxs;
-float mins;
-float cp = 100;
-color bgl = color(0);
-boolean valids = true;
+/* canvas */
 float width;
 float height;
-float pwidth;
-float pheight;
+
+/* nodes */
+// ArrayList nodes;
 
 void setup() {
+    
+    /* set canvas size to window size */
     width = window.innerWidth;
     height = window.innerHeight;
     size(width, height);
-    pwidth = width;
-    pheight = height;
-    nodes = new ArrayList();
-    textFont(myfont);
-    nodes.add(new Node(min(width,height)/5,width/2,height/2,color(random(150,255),random(150,255),random(150,255))));
-}
 
- 
+    /* initialize array list */
+    // nodes = new ArrayList();
+
+    /* set font */
+    textFont(myfont);
+
+    /* clear canvas */
+    background(color(255));
+
+}
 
 Number.prototype.between = function (min, max) {
     return this > min && this < max;
 };
 
+void draw () {
+    
+    noStroke();
+    fill(0,0,0,10);
 
+    paint(mouseX,mouseY,40);
 
-
-void draw() {
-    width = window.innerWidth;
-    height = window.innerHeight;
-    size(width, height);
-    strokeWeight(5);
-    background(bgl);
-    fill(lerpColor(bgl,255,cp/100));
-    textAlign(CENTER,CENTER);
-    if ((height - width/46) < width/5) {textSize(height - width/46);} else {textSize(width/5);}
-    text("BALANCE",width/2,height/2);
-    //text("BALANCE " + round(cp) + "%",width/2,height/2);
-    textAlign(CENTER,BOTTOM);
-    if ((height - width/46) < width/5) {textSize(20);} else {textSize(width/45);}
-    fill(255);
-    text("Drag to create cell. Left click to split. Right click to kill.",width/2,height - 10);
-    maxs = 0;
-    mins = height;
-    valids = true;
-    for (int i=nodes.size()-1; i>=0; i--) {
-        Particle n = (Node) nodes.get(i);
-        n.update();
-        if (n.orir < mins) {mins = n.orir;} 
-        if (n.orir > maxs) {maxs = n.orir;} 
-        if (n.orir < 1) {
-          nodes.remove(i);
-        }
-    }
-    cp += (round((mins/maxs)*100) - cp)/20;
-    if (se) {
-      fill(0,0);
-      stroke(255);
-      if ((sx + dist(sx,sy,mouseX,mouseY))>width||(sx - dist(sx,sy,mouseX,mouseY))<0||(sy + dist(sx,sy,mouseX,mouseY)) > height || (sy - dist(sx,sy,mouseX,mouseY)) < 0 || dist(sx,sy,mouseX,mouseY) <= 10 || !valids) {
-        stroke(255,0,0);
-      }
-      ellipse(sx,sy,dist(sx,sy,mouseX,mouseY)*2,dist(sx,sy,mouseX,mouseY)*2);
-      line(sx,sy,mouseX,mouseY);
-    }
-    strokeWeight(1);
-    stroke(255,150);
-    fill(0,150);
-    rect(0,height-11,10,10);
-    if (mouseX.between(0,10) && mouseY.between(height-10,height)) {
-      fill(255);
-      textAlign(LEFT,BOTTOM);
-      text("Fullscreen",10,height);
-    }
-    pwidth = width;
-    pheight = height;
 }
 
-void mouseClicked() {
-    if (mouseX.between(0,10) && mouseY.between(height-10,height)) {
-      document.documentElement.webkitRequestFullScreen();
+void paint (float _x, float _y, float _radius) {
+
+    /* generate polygon */
+    ArrayList polygon = new ArrayList();
+    createPolygon(polygon,10,random(TWO_PI),_radius);
+    deformPolygonTimes(polygon,_radius / 8,3);
+
+    /* draw polygon */
+    beginShape();
+    for (int i = 0; i < polygon.size(); ++i) {
+        PVector vector = polygon.get(i);
+        vertex(mouseX + vector.x,mouseY + vector.y);
     }
+    endShape();
+
 }
 
-void mousePressed() {
-    if (mouseX.between(0,10) && mouseY.between(height-10,height)) {} else {
-      if (mouseButton == LEFT) {
-        for (int i=nodes.size()-1; i>=0; i--) {
-            Particle n = (Node) nodes.get(i);
-            n.splitc();
-        }
-      } else {
-        for (int i=nodes.size()-1; i>=0; i--) {
-            Particle n = (Node) nodes.get(i);
-            n.kill();
-        } 
-      }
+void createPolygon (ArrayList _polygon, int _sides, float _startRadian, float _radius) {
+
+    _polygon.clear();
+    float deltaRadian = TWO_PI / _sides;
+    for (int i = 0; i < _sides; ++i) {
+
+        float rad = _startRadian + (deltaRadian * i);
+        _polygon.add(new PVector(cos(rad) * _radius,sin(rad) * _radius));
+
     }
+
 }
 
+void deformPolygonTimes (ArrayList _polygon, float _scale, int _times) {
 
-void mouseDragged() {
-    if (!se) {
-      sx = mouseX;
-      sy = mouseY;
-      se = true;
+    for (int i = 0; i < _times; ++i) {
+        deformPolygon(_polygon,_scale);
     }
+
 }
 
-void mouseReleased() {
-    if (se) {
-      if (
-          (sx + dist(sx,sy,mouseX,mouseY)) < width && 
-          (sx - dist(sx,sy,mouseX,mouseY)) > 0 &&
-          (sy + dist(sx,sy,mouseX,mouseY)) < height &&
-          (sy - dist(sx,sy,mouseX,mouseY)) > 0 && dist(sx,sy,mouseX,mouseY) > 10 && valids) {nodes.add(new Node(0,null,null,null));}
-      se = false;
+void deformPolygon (ArrayList _polygon, float _scale) {
+
+    int originalSize = _polygon.size();
+    for (int i = 0; i < originalSize; ++i) {
+
+        int actualIndex = i * 2;
+        PVector next = _polygon.get((i + 1 < originalSize) ? (actualIndex + 1) : 0).get();
+        PVector midpoint = _polygon.get(actualIndex).get();
+        midpoint.add(next);
+        midpoint.mult(0.5);
+
+        PVector offset = PVector.random2D();
+        offset.mult(_scale);
+        midpoint.add(offset);
+
+        _polygon.add(actualIndex + 1, midpoint);
+
     }
+
 }
 
+/*
 class Node {
     float x;
     float y;
@@ -247,13 +219,7 @@ class Node {
         if (dist(sx,sy,mouseX,mouseY) > dist(sx,sy,x,y)) {valids = false;}
         x += vx;
         y += vy;
-        x *= width/pwidth;
-        y *= height/pheight;
-        orir *= width/pwidth;
-        orir *= height/pheight;
-        r *= width/pwidth;
-        r *= height/pheight;
-        dr *= width/pwidth;
+
         dr *= height/pheight;
         if (dist(r,0,dr,0) > 1) {r += (dr - r)/10;}
         fill(c);
@@ -263,3 +229,4 @@ class Node {
         ellipse(x,y,orir*2,orir*2);
     }
 }
+*/
