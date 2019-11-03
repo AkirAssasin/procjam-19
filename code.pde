@@ -6,6 +6,8 @@ var myfont = loadFont("fonts/font.ttf");
 float width;
 float height;
 
+int count;
+
 /* nodes */
 // ArrayList nodes;
 
@@ -33,10 +35,36 @@ Number.prototype.between = function (min, max) {
 
 void draw () {
     
+    if (count > 30) return;
+    ++count;
+
     noStroke();
     fill(0,0,0,10);
 
-    paint(mouseX,mouseY,40);
+    float r = random(60);
+    float x = random(width);
+    float y = random(height);
+
+    paintTimes(x,y,r,20);
+    paintTimes(width - x,y,r,20);
+
+}
+
+void paintTimes (float _x, float _y, float _radius, int _times) {
+
+    /* generate polygon */
+    // ArrayList polygon = new ArrayList();
+    // createPolygon(polygon,10,random(TWO_PI),_radius);
+    // stretchPolygonInDirection(polygon,random(TWO_PI),3);
+    
+    /* draw deformations */
+
+    for (int t = 0; t < _times; ++t) {
+
+        paint(_x,_y,_radius);
+        // paintPolygon(polygon,_radius / 8,_x,_y);
+
+    }
 
 }
 
@@ -45,15 +73,23 @@ void paint (float _x, float _y, float _radius) {
     /* generate polygon */
     ArrayList polygon = new ArrayList();
     createPolygon(polygon,10,random(TWO_PI),_radius);
-    deformPolygonTimes(polygon,_radius / 8,3);
+    stretchPolygonInDirection(polygon,random(TWO_PI),3);
+    paintPolygon(polygon,_radius / 8,_x,_y);
+
+}
+
+void paintPolygon (ArrayList _polygon, float _defRadius, float _x, float _y) {
+
+    ArrayList defpoly = _polygon.clone();
+    deformPolygonTimes(defpoly,_defRadius,3);
 
     /* draw polygon */
     beginShape();
-    for (int i = 0; i < polygon.size(); ++i) {
-        PVector vector = polygon.get(i);
-        vertex(mouseX + vector.x,mouseY + vector.y);
-    }
-    endShape();
+        for (int i = 0; i < defpoly.size(); ++i) {
+            PVector vector = defpoly.get(i);
+            vertex(_x + vector.x,_y + vector.y);
+        }
+    endShape();   
 
 }
 
@@ -65,6 +101,32 @@ void createPolygon (ArrayList _polygon, int _sides, float _startRadian, float _r
 
         float rad = _startRadian + (deltaRadian * i);
         _polygon.add(new PVector(cos(rad) * _radius,sin(rad) * _radius));
+
+    }
+
+}
+
+void stretchPolygonInDirection (ArrayList _polygon, float _radian, float _scale) {
+
+    float c = cos(_radian);
+    float s = sin(_radian);
+
+    for (int i = 0; i < _polygon.size(); ++i) {
+
+        PVector original = _polygon.get(i);
+        
+        /* convert to rotated coordinate system */
+        PVector result = new PVector(original.x * c + original.y * s, original.x * -s + original.y * c);
+        original = result;
+
+        if (original.x < 0) continue;
+
+        /* scale in first axis of rotated coordinate system */
+        PVector result = new PVector(original.x * _scale,original.y);
+        original = result;
+
+        PVector result = new PVector(original.x * c - original.y * s, original.x * s + original.y * c);
+        _polygon.set(i,result);
 
     }
 
