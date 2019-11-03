@@ -33,7 +33,7 @@ Number.prototype.between = function (min, max) {
 
 void draw () {
 
-    paint(mouseX,mouseY,40,color(0),10,10);
+    paint(mouseX,mouseY,40,color(0,10));
 
 }
 
@@ -43,25 +43,49 @@ void mouseClicked () {
 
 }
 
-void paint (float _x, float _y, float _radius, color _color, float _fillAlpha, float _strokeAlpha) {
+void paint (float _x, float _y, float _radius, color _color) {
+
+    PGraphics polygonGraphic = createGraphics(_radius * 4, _radius * 4);
 
     /* generate polygon */
     ArrayList polygon = new ArrayList();
     createPolygon(polygon,4,random(TWO_PI),_radius);
     deformPolygonTimes(polygon,_radius / 8,3);
 
-    /* set polygon colors */
-    stroke(_color,_strokeAlpha);
-    strokeWeight(3);
-    fill(_color,_fillAlpha);
-
-    /* draw polygon */
-    beginShape();
+    /* apply polygon to graphic */
+    polygonGraphic.stroke(255);
+    polygonGraphic.strokeWeight(3);
+    polygonGraphic.fill(200);
+    polygonGraphic.beginShape();
         for (int i = 0; i < polygon.size(); ++i) {
             PVector vector = polygon.get(i);
-            vertex(_x + vector.x,_y + vector.y);
+            polygonGraphic.vertex(_radius * 2 + vector.x,_radius * 2 + vector.y);
         }
-    endShape();
+    polygonGraphic.endShape();
+
+    /* apply polygon graphic to image */
+    PImage output = polygonGraphic.get();
+
+    /* generate mask */
+    polygonGraphic.noStroke();
+    polygonGraphic.fill(0);
+    for (int i = 0; i < 10; ++i) {
+
+        PVector rv = PVector.random2D();
+        rv.mult(random(_radius));
+
+        float mr = random(_radius / 2);
+        polygonGraphic.ellipse(_radius * 2 + rv.x,_radius * 2 + rv.y,mr,mr);
+
+    }
+
+    /* apply mask */
+    PImage mask = polygonGraphic.get();
+    output.mask(mask);
+
+    /* draw graphic */
+    tint(_color);
+    image(output,_x - _radius * 2,_y - _radius * 2);
 
 }
 
