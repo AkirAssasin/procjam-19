@@ -5,11 +5,18 @@ var myfont = loadFont("fonts/font.ttf");
 /* canvas */
 float width;
 float height;
+color bgColor;
 
-int count;
 PGraphic halfGraphic;
 
-color secondaryColor;
+int colorCount = 3;
+color[] colors;
+int[] counts;
+
+int currentColor;
+int currentCount;
+
+PVector currentPosition;
 
 /* nodes */
 // ArrayList nodes;
@@ -27,10 +34,58 @@ void setup() {
     /* set font */
     textFont(myfont);
 
-    /* clear canvas */
-    background(color(255));
+    /* set colors and counts */
+    bgColor = color(255,255,200);
 
-    secondaryColor = color(random(255),random(255),random(255));
+    colorCount = 1 + round(random(2));
+    colorCount *= 2;
+
+    colors = new color[colorCount];
+    counts = new int[colorCount];
+    colors[0] = color(0);
+    counts[0] = 20;
+
+    for (int i = 2; i < colorCount; i += 2) {
+
+        float red = random(255);
+        float green = random(red);
+
+        colors[i] = color(red,green,random(min(red,green)));
+        counts[i] = 5;
+    }
+
+    for (int i = 1; i < colorCount; i += 2) {
+        colors[i] = bgColor;
+        counts[i] = 1;
+    }
+
+    currentColor = 0;
+
+    /* clear canvas */
+    background(bgColor);
+
+    /* pick starting position */
+    currentPosition = new PVector(0,0);
+    randomizePosition();
+
+}
+
+void randomizePosition () {
+
+    currentPosition.x = (1 - skewedRandom()) * width/2;
+    currentPosition.y = skewedToCenterRandom() * height;
+
+}
+
+void randomOffsetPosition (float minDistance, float maxDistance) {
+
+    PVector ran = PVector.random2D();
+    ran.mult(random(minDistance,maxDistance));
+    currentPosition.add(ran);
+
+    if (currentPosition.x < 0 || currentPosition.x > width/2 || currentPosition.y < 0 || currentPosition > height) {
+        randomizePosition();
+    }
 
 }
 
@@ -40,23 +95,28 @@ Number.prototype.between = function (min, max) {
 
 void draw () {
     
-    if (count > 30) return;
-    ++count;
+    while (currentColor < colorCount && currentCount >= counts[currentColor]) {
+        ++currentColor;
+        currentCount = 0;
+    }
+
+    if (currentColor >= colorCount) return;
+    ++currentCount;
 
     halfGraphic.noStroke();
-    if (random(1) > 0.5) {
-        halfGraphic.fill(20,20,20,5 + random(10));
-    } else halfGraphic.fill(secondaryColor,5 + random(10));
+    halfGraphic.fill(colors[currentColor],3 + random(5));
 
-    float r = 20 + random(50);
-    float x = (1 - skewedRandom()) * width/2;
-    float y = random(height);
+    float r = 30 + random(50);
 
-    paintTimes(halfGraphic,x,y,r,50);
+    if (random(1) < 0.2) {
+        randomizePosition();
+    } else randomOffsetPosition(50,100);
+    
+    paintTimesSplit(halfGraphic,currentPosition.x,currentPosition.y,r,40);
 
     /* actual render */
 
-    background(color(255));
+    background(bgColor);
     ellipse(0,0,5,5);
     image(halfGraphic,0,0);
     
@@ -69,7 +129,33 @@ void draw () {
 
 float skewedRandom () {
     float r = random(1);
-    return r * r;
+    return r * r * r;
+}
+
+float skewedToCenterRandom () {
+    float r = random(2) - 1;
+    return 0.5 + (0.5 * r * r * r);
+}
+
+void paintTimesSplit (PGraphic _target, float _x, float _y, float _radius, int _times) {
+
+    /* generate polygon */
+    ArrayList polygon = new ArrayList();
+    createPolygon(polygon,10,random(TWO_PI),_radius);
+
+    int count = 1 + round(random(3));
+    float extraScale = (1 - (random(count) / 4)) * 2.5;
+    
+    for (int i = 0; i < count; ++i) {
+
+        ArrayList strpoly = polygon.clone();
+        stretchPolygonInDirection(strpoly,random(TWO_PI),1.5 + random(extraScale));
+        for (int t = 0; t < _times; ++t) {
+            paintPolygon(_target,strpoly,_radius / 4,_x,_y);
+        }
+
+    }
+
 }
 
 void paintTimes (PGraphic _target, float _x, float _y, float _radius, int _times) {
