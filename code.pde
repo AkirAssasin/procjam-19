@@ -7,8 +7,20 @@ float width;
 float height;
 color bgColor;
 
-/* graphic */
-PGraphic rorschach;
+/* card */
+float cardPadding = 10;
+
+/* rorschach */
+float rWidth = 400;
+float rHeight = 300;
+float rMinDist = 20;
+float rMaxDist = 40;
+float rBlotRadius = 30;
+int rBlotTimes = 40;
+
+color rorschachBgColor;
+PImage rorschach;
+PImage oldRorschach;
 
 void setup() {
     
@@ -21,11 +33,13 @@ void setup() {
     textFont(myfont);
 
     /* set canvas background */
-    bgColor = color(255,255,200);
+    bgColor = color(30,30,30);
     background(bgColor);
 
     /* generate rorschach */
+    rorschachBgColor = color(255,255,200);
     rorschach = generateRorschach();
+    oldRorschach = rorschach;
 
 }
 
@@ -82,12 +96,13 @@ PGraphic generateRorschach () {
 
     /* pick starting position */
     currentPosition = new PVector(0,0);
-    randomizeVectorBiased(currentPosition,width/2,height);
+    randomizeVectorBiased(currentPosition,rWidth/2,rHeight);
 
     /* initialize graphic */
-    PGraphic halfGraphic = createGraphics(width/2,height);
+    PGraphic halfGraphic = createGraphics(rWidth/2,rHeight);
 
     /* generate half-rorschach */
+    halfGraphic.beginDraw();
     halfGraphic.noStroke();
     for (int col = 0; col < colorCount; ++col) {
 
@@ -96,28 +111,31 @@ PGraphic generateRorschach () {
         for (int ct = counts[col]; ct > 0; --ct) {
 
             halfGraphic.fill(c,3 + random(5));
-            float r = 30 + random(50);
+            float r = rBlotRadius * random(0.375,1);
 
             if (random(1) < 0.2) {
-                randomizeVectorBiased(currentPosition,width/2,height);
-            } else randomOffsetVector(currentPosition,width/2,height,50,100);
+                randomizeVectorBiased(currentPosition,rWidth/2,rHeight);
+            } else randomOffsetVector(currentPosition,rWidth/2,rHeight,rMinDist,rMaxDist);
     
-            paintTimesSplit(halfGraphic,currentPosition.x,currentPosition.y,r,40);
+            paintTimesSplit(halfGraphic,currentPosition.x,currentPosition.y,r,rBlotTimes);
 
         }
 
     }
+    halfGraphic.endDraw();
 
     /* generate full rorschach */
-    PGraphic fullGraphic = createGraphics(width,height);
+    PGraphic fullGraphic = createGraphics(rWidth,rHeight);
     
-    fullGraphic.background(bgColor);
+    fullGraphic.beginDraw();
+    fullGraphic.background(rorschachBgColor);
     fullGraphic.image(halfGraphic,0,0);
     
     fullGraphic.pushMatrix();
     fullGraphic.scale(-1.0,1.0);
-    fullGraphic.image(halfGraphic,-width,0);
+    fullGraphic.image(halfGraphic,-rWidth,0);
     fullGraphic.popMatrix();
+    fullGraphic.endDraw();
 
     return fullGraphic;
 
@@ -128,12 +146,29 @@ void draw () {
     /* actual render */
 
     background(bgColor);
-    ellipse(0,0,5,5);
-    image(rorschach,0,0);
+
+    drawRorschachCard(rorschach,mouseX,mouseY,0);
+    drawRorschachCard(oldRorschach,width - mouseX,height - mouseY,0);
+    
+
+}
+
+void drawRorschachCard (PImage _image, float _x, float _y, float _rotation) {
+
+    pushMatrix();
+    translate(_x,_y);
+    rotate(_rotation);
+    
+    rectMode(CENTER);
+    rect(0,0,rWidth + cardPadding,rHeight + cardPadding);
+    imageMode(CENTER);
+    image(_image,0,0);
+    popMatrix();
 
 }
 
 void mouseClicked () {
+    oldRorschach = rorschach;
     rorschach = generateRorschach();
 }
 
