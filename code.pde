@@ -7,19 +7,8 @@ float width;
 float height;
 color bgColor;
 
-PGraphic halfGraphic;
-
-int colorCount = 3;
-color[] colors;
-int[] counts;
-
-int currentColor;
-int currentCount;
-
-PVector currentPosition;
-
-/* nodes */
-// ArrayList nodes;
+/* graphic */
+PGraphic rorschach;
 
 void setup() {
     
@@ -28,63 +17,33 @@ void setup() {
     height = window.innerHeight;
     size(width, height);
 
-    /* initialize graphic */
-    halfGraphic = createGraphics(width/2,height);
-
     /* set font */
     textFont(myfont);
 
-    /* set colors and counts */
+    /* set canvas background */
     bgColor = color(255,255,200);
-
-    colorCount = 1 + round(random(2));
-    colorCount *= 2;
-
-    colors = new color[colorCount];
-    counts = new int[colorCount];
-    colors[0] = color(0);
-    counts[0] = 20;
-
-    for (int i = 2; i < colorCount; i += 2) {
-
-        float red = random(255);
-        float green = random(red);
-
-        colors[i] = color(red,green,random(min(red,green)));
-        counts[i] = 5;
-    }
-
-    for (int i = 1; i < colorCount; i += 2) {
-        colors[i] = bgColor;
-        counts[i] = 1;
-    }
-
-    currentColor = 0;
-
-    /* clear canvas */
     background(bgColor);
 
-    /* pick starting position */
-    currentPosition = new PVector(0,0);
-    randomizePosition();
+    /* generate rorschach */
+    rorschach = generateRorschach();
 
 }
 
-void randomizePosition () {
+void randomizeVectorBiased (PVector _vector, float _width, float _height) {
 
-    currentPosition.x = (1 - skewedRandom()) * width/2;
-    currentPosition.y = skewedToCenterRandom() * height;
+    _vector.x = (1 - skewedRandom()) * _width;
+    _vector.y = skewedToCenterRandom() * _height;
 
 }
 
-void randomOffsetPosition (float minDistance, float maxDistance) {
+void randomOffsetVector (PVector _vector, float _width, float _height, float minDistance, float maxDistance) {
 
     PVector ran = PVector.random2D();
     ran.mult(random(minDistance,maxDistance));
-    currentPosition.add(ran);
+    _vector.add(ran);
 
-    if (currentPosition.x < 0 || currentPosition.x > width/2 || currentPosition.y < 0 || currentPosition > height) {
-        randomizePosition();
+    if (_vector.x < 0 || _vector.x > _width || _vector.y < 0 || _vector > _height) {
+        randomizeVectorBiased(_vector,_width,_height);
     }
 
 }
@@ -93,38 +52,89 @@ Number.prototype.between = function (min, max) {
     return this > min && this < max;
 };
 
-void draw () {
+PGraphic generateRorschach () {
+
+    /* random amount of colors + white in between */
+    int colorCount = 1 + round(random(2));
+    colorCount *= 2;
+
+    /* initialize color arrays */
+    color[] colors = new color[colorCount];
+    int[] counts = new int[colorCount];
     
-    while (currentColor < colorCount && currentCount >= counts[currentColor]) {
-        ++currentColor;
-        currentCount = 0;
+    /* first color always black */
+    colors[0] = color(0);
+    counts[0] = 20;
+
+    /* random shade of red / yellow for other colors */
+    for (int i = 2; i < colorCount; i += 2) {
+        float red = random(255);
+        float green = random(red);
+        colors[i] = color(red,green,random(min(red,green)));
+        counts[i] = 5;
     }
 
-    if (currentColor >= colorCount) return;
-    ++currentCount;
+    /* interlace whites in between */
+    for (int i = 1; i < colorCount; i += 2) {
+        colors[i] = bgColor;
+        counts[i] = 1;
+    }
 
+    /* pick starting position */
+    currentPosition = new PVector(0,0);
+    randomizeVectorBiased(currentPosition,width/2,height);
+
+    /* initialize graphic */
+    PGraphic halfGraphic = createGraphics(width/2,height);
+
+    /* generate half-rorschach */
     halfGraphic.noStroke();
-    halfGraphic.fill(colors[currentColor],3 + random(5));
+    for (int col = 0; col < colorCount; ++col) {
 
-    float r = 30 + random(50);
+        color c = colors[col];
 
-    if (random(1) < 0.2) {
-        randomizePosition();
-    } else randomOffsetPosition(50,100);
+        for (int ct = counts[col]; ct > 0; --ct) {
+
+            halfGraphic.fill(c,3 + random(5));
+            float r = 30 + random(50);
+
+            if (random(1) < 0.2) {
+                randomizeVectorBiased(currentPosition,width/2,height);
+            } else randomOffsetVector(currentPosition,width/2,height,50,100);
     
-    paintTimesSplit(halfGraphic,currentPosition.x,currentPosition.y,r,40);
+            paintTimesSplit(halfGraphic,currentPosition.x,currentPosition.y,r,40);
+
+        }
+
+    }
+
+    /* generate full rorschach */
+    PGraphic fullGraphic = createGraphics(width,height);
+    
+    fullGraphic.background(bgColor);
+    fullGraphic.image(halfGraphic,0,0);
+    
+    fullGraphic.pushMatrix();
+    fullGraphic.scale(-1.0,1.0);
+    fullGraphic.image(halfGraphic,-width,0);
+    fullGraphic.popMatrix();
+
+    return fullGraphic;
+
+}
+
+void draw () {
 
     /* actual render */
 
     background(bgColor);
     ellipse(0,0,5,5);
-    image(halfGraphic,0,0);
-    
-    pushMatrix();
-    scale(-1.0,1.0);
-    image(halfGraphic,-width,0);
-    popMatrix();
+    image(rorschach,0,0);
 
+}
+
+void mouseClicked () {
+    rorschach = generateRorschach();
 }
 
 float skewedRandom () {
